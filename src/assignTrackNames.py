@@ -1,13 +1,14 @@
+#/usr/bin python3
+
 import os
 import pandas as pd
 
 from mutagen.mp3 import MP3
 from mutagen.easyid3 import EasyID3
 
-def getPlaylist(filePath):
-    columns = ['Nom du titre', "Nom(s) de l'artiste de l'album", "Nom de l'album", "Nom(s) de l'artiste"]
-    playlist_df = pd.read_csv(filePath)
-    return playlist_df[columns]
+from getPlaylist import getPlaylist
+
+
 
 def reNumberFileNames(directoryPath):
     os.chdir(directoryPath)
