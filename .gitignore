@@ -1,0 +1,21 @@
+
+# Ignore environment variable files
+.env
+
+
+# Ignore temporary files
+*.tmp
+*.swp
+
+# Ignore OS generated files
+.DS_Store
+Thumbs.db
+
+# Ignore IDE specific files
+.vscode/
+.idea/
+*.iml
+*.pyc
+.cache
+
+**/src/__pycache__/*
