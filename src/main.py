@@ -54,6 +54,7 @@ def selectTrackLength(client, track):
 def exportToMp3(client, track):
     trackName = f'{track[trackNameCol].replace(" ", "_")}--{track[trackArtistCol].replace(" ", "_")}'
     client.write("SelectAll")
+    client.write(f"Normalize: ApplyVolume=1 RemoveDcOffset=1 PeakLevel=-1 StereoIndependent=0")
     client.write(f"Export2: Filename={buildTrackFilePath(track)} NumChannels=1.0")
     time.sleep(4)
     client.write("SelectAll")
