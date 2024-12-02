@@ -8,12 +8,16 @@ import spotipy
 from spotipy.oauth2 import SpotifyOAuth
 from dotenv import load_dotenv
 
+import io
+import requests
+
 load_dotenv()
 
 trackDurationInMsCol = "Durée du titre (ms)"
 trackUrlCol = "URI du titre"
 trackNameCol = "Nom du titre"
 trackArtistCol = "Nom(s) de l'artiste"
+trackImageURL = "URL de l'image de l'album"
 safetyMarginInSeconds = 1
 
 
@@ -69,7 +73,15 @@ def buildTrackFilePath(track):
 
 def assignTrackInfos(track):
     print("Assigning track infos")
-    applyTrackInfo(buildTrackFilePath(track), track)
+    albumCover = getTrackAlbumCover(track)
+    applyTrackInfo(buildTrackFilePath(track), track, albumCover = albumCover)
+
+
+
+def getTrackAlbumCover(track):
+    coverUrl = track[trackImageURL]
+    data = requests.get(coverUrl).content
+    return io.BytesIO(data)
 
 
 def main():
