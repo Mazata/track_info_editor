@@ -20,6 +20,8 @@ trackArtistCol = "Nom(s) de l'artiste"
 trackImageURL = "URL de l'image de l'album"
 safetyMarginInSeconds = 1
 
+dataFolder = "/Users/theobernier/Music/Downloads/spotify_download_22_4_25"
+playlistFolder = "/Users/theobernier/Music/Downloads/spotify_download_22_4_25"
 
 
 
@@ -48,33 +50,59 @@ def stopRecording(client):
 def recordTrack(client, track):
     selectTrackLength(client, track)
     startRecording(client)
-    time.sleep(track[trackDurationInMsCol] / 100000 + safetyMarginInSeconds )
 
 def selectTrackLength(client, track):
     trackStart = 0
-    trackEndInSeconds = round(track[trackDurationInMsCol] / 100000) + safetyMarginInSeconds
+    trackEndInSeconds = round(track[trackDurationInMsCol] / 1000) + safetyMarginInSeconds
     client.write(f'SelectTime: End="{trackEndInSeconds}" RelativeTo="ProjectStart" Start="0"')
+
+def waitForClient(client, statusSubstring):
+    audacityStatus = getClientStatus(client)
+    while statusSubstring not in audacityStatus.strip():
+        print("status", audacityStatus)
+        print("waiting for audacity operation to finish")
+        time.sleep(1)
+        audacityStatus = getClientStatus(client)
+    print("client finished with status", audacityStatus)
+
+def waitForClientNormalize(client):
+    waitForClient(client, "BatchCommand finished: OK")
+
+def waitForClientExport(client):
+    waitForClient(client, "Exported to MP3")
 
 def exportToMp3(client, track):
     trackName = f'{track[trackNameCol].replace(" ", "_")}--{track[trackArtistCol].replace(" ", "_")}'
     client.write("SelectAll")
+    time.sleep(0.5)
+    getClientStatus(client)
     client.write(f"Normalize: ApplyVolume=1 RemoveDcOffset=1 PeakLevel=-1 StereoIndependent=0")
+    time.sleep(0.5)
+    waitForClientNormalize(client)
+
+
     client.write(f"Export2: Filename={buildTrackFilePath(track)} NumChannels=1.0")
-    time.sleep(4)
+    waitForClientExport(client)
     client.write("SelectAll")
     client.write("RemoveTracks")
+    time.sleep(0.5)
 
 def getClientStatus(client):
-    client.read()
+    return client.read()
 
 def buildTrackFilePath(track):
-    fileName = f'{track[trackNameCol].replace(" ", "_")}--{track[trackArtistCol].replace(" ", "_")}'
-    return f"/Users/localadmin/Documents/Perso/Spotify_downloader/downloaded_tracks/{fileName}.mp3"
+
+    fileName = "%s--%s" % \
+               (
+                   track[trackNameCol].replace(" ", "_").replace("\\", "-").replace("/", "_"),
+                   track[trackArtistCol].replace(" ", "_").replace("\\", "-").replace("/", "_")
+               )
+    return f"{dataFolder}/{fileName}.mp3"
 
 def assignTrackInfos(track):
     print("Assigning track infos")
     albumCover = getTrackAlbumCover(track)
-    applyTrackInfo(buildTrackFilePath(track), track, albumCover = albumCover)
+    applyTrackInfo(buildTrackFilePath(track), track, albumCover=albumCover)
 
 
 
@@ -86,17 +114,18 @@ def getTrackAlbumCover(track):
 
 def main():
     spotifyClient = authenticateToSpotify()
-    tracks = getPlaylist("/Users/localadmin/Downloads/track_infos.csv")
+    tracks = getPlaylist(f"{playlistFolder}/track_infos.csv")[64:]
     client = audacityClient.PipeClient()
 
     for index, track in tracks.iterrows():
-        playSpotifyTrack(track)
+        if index < 72:
+            continue
         recordTrack(client, track)
+        playSpotifyTrack(track)
+        time.sleep(track[trackDurationInMsCol] / 1000 + safetyMarginInSeconds)
         spotifyClient.pause_playback()
         exportToMp3(client, track)
         assignTrackInfos(track)
-        if(index == 6):
-            break
 
 if (__name__=="__main__"):
     main()
